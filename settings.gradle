@@ -1,0 +1,3 @@
+rootProject.name = 'gdx-library-template'
+
+gradle.startParameter.taskNames.add("setup")

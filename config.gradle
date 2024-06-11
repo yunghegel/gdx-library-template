@@ -1,0 +1,108 @@
+import java.text.SimpleDateFormat
+
+ext {
+    LIBRARY_VERSION=0.26
+    RELEASE="false"
+    GROUP='org.yunghegel.gdx'
+    PUBLISH_TARGET="https://repo.yunghegel.dev/"
+    ID='template'
+    USE_KOTLIN=true
+    USE_JAVA=false
+    AUTODEPLOY=false
+}
+
+if (USE_KOTLIN) {
+    apply plugin: 'kotlin'
+
+    dependencies {
+        testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    }
+}
+
+def lock = file("gradle/.lock")
+def predicate = ( lock.exists() && lock.text.readLines()[0] != LIBRARY_VERSION.toString())
+def triggerPublish = false
+def updateNeeded = lock.text.readLines()[0] != LIBRARY_VERSION.toString()
+
+if (updateNeeded && AUTODEPLOY) {
+    println("Update needed:")
+    triggerPublish = true
+    println("Version changed from ${lock.text.readLines()[0]} to ${LIBRARY_VERSION} - deleting lock")
+    lock.delete()
+    lock.createNewFile()
+    lock.setWritable(true, false)
+    def date = new Date()
+    def format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    lock.text = LIBRARY_VERSION + "\n" + format.format(date)
+
+}
+
+
+
+
+publish {
+    dependsOn("setup")
+    onlyIf("build version unchanged") { triggerPublish }
+
+
+}
+
+
+
+tasks.register("checkVersionOutOfDate") {
+
+
+    doFirst {
+        if (lock.exists()) {
+            def lines = lock.readLines()
+            def last = lines[0]
+            if (last != LIBRARY_VERSION.toString()) {
+                println("Version changed from ${last} to ${LIBRARY_VERSION} - deleting lock")
+                lock.delete()
+                triggerPublish = true
+            } else {
+                println("Version unchanged")
+
+            }
+        }
+    }
+
+}
+
+defaultTasks("checkVersionOutOfDate")
+
+
+tasks.register("setup") {
+//    read group and create a directory
+    dependsOn("checkVersionOutOfDate")
+
+    def packagePath = GROUP.replace('.', '/') + "/${ID}"
+
+    doFirst {
+        if (!lock.exists()) {
+            if (USE_KOTLIN) {
+                def groupDir = file("src/kotlin/${packagePath}")
+                groupDir.mkdirs()
+            }
+
+            if (USE_JAVA) {
+                def groupDir = file("src/java/${packagePath}")
+                groupDir.mkdirs()
+            }
+            lock.createNewFile()
+            lock.setWritable(true,false)
+            def date = new Date()
+            def format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+
+            lock.text = LIBRARY_VERSION + "\n" + format.format(date)
+        }
+    }
+}
+
+tasks.named("build").get().mustRunAfter("setup")
+
+
+
+
+
+

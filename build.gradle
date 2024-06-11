@@ -1,0 +1,132 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+    }
+}
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'java'
+}
+
+
+apply from : 'config.gradle'
+
+group =  "${GROUP}"
+version = ("${RELEASE}" == "true" ) ? "${LIBRARY_VERSION}" : "${LIBRARY_VERSION}-SNAPSHOT"
+
+
+repositories {
+    mavenCentral()
+}
+
+test {
+    useJUnitPlatform()
+}
+
+dependencies {
+
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+
+    implementation "com.github.crykn.guacamole:core:$guacamoleVersion"
+    implementation "com.github.crykn.guacamole:gdx:$guacamoleVersion"
+    implementation "com.github.crykn.guacamole:gdx-desktop:$guacamoleVersion"
+    implementation "com.github.czyzby:gdx-kiwi:$kiwiVersion"
+
+    if (USE_KOTLIN) {
+        implementation "io.github.libktx:ktx-inject:$ktxVersion"
+        implementation "io.github.libktx:ktx-collections:$ktxVersion"
+        implementation "io.github.libktx:ktx-graphics:$ktxVersion"
+        implementation "io.github.libktx:ktx-scene2d:$ktxVersion"
+        implementation "io.github.libktx:ktx-app:$ktxVersion"
+        implementation "io.github.libktx:ktx-assets:$ktxVersion"
+        implementation "io.github.libktx:ktx-async:$ktxVersion"
+        implementation "io.github.libktx:ktx-json:$ktxVersion"
+        implementation "io.github.libktx:ktx-math:$ktxVersion"
+        implementation "io.github.libktx:ktx-style:$ktxVersion"
+        implementation "io.github.libktx:ktx-vis:$ktxVersion"
+        implementation "io.github.libktx:ktx-actors:$ktxVersion"
+        implementation "io.github.libktx:ktx-vis:$ktxVersion"
+        implementation "io.github.libktx:ktx-ashley:$ktxVersion"
+        implementation "io.github.libktx:ktx-assets-async:$ktxVersion"
+    }
+
+    testImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+
+
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['res']
+        }
+        java {
+            srcDirs = ['src/java']
+        }
+        kotlin {
+            srcDirs = ['src/kotlin']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['test']
+        }
+        kotlin {
+            srcDirs = ['test']
+        }
+        resources {
+            srcDirs = ['res']
+        }
+    }
+}
+
+
+kotlin {
+    jvmToolchain(11)
+}
+
+java {
+    withSourcesJar()
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+jar {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes 'Built-By': System.getProperty('user.name')
+        attributes 'Built-JDK': System.getProperty('java.version')
+        attributes 'Built-OS': System.getProperty('os.name')
+    }
+}
+
+publishing {
+
+
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = GROUP
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            name = (SNAPSHOT) ? "snapshots" : "releases"
+            url = uri(PUBLISH_TARGET + (SNAPSHOT ? "snapshots" : "releases"))
+            authentication { basic(BasicAuthentication) }
+            credentials(PasswordCredentials)
+        }
+    }
+}
