@@ -13,6 +13,11 @@ plugins {
     id 'java'
 }
 
+def folders = ["src", "res", "test"]
+
+folders.each { folder ->
+    mkdir(folder)
+}
 
 apply from : 'config.gradle'
 
